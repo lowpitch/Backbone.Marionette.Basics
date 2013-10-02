@@ -1,0 +1,217 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Marionette</title>
+</head>
+<body>
+    <header id="header"></header>
+    <section id="main"></section>
+    <footer id="footer"></footer>
+
+    <script src="lib\jquery.min.js"></script>
+    <script src="lib\underscore-min.js"></script>
+    <script src="lib\backbone-min.js"></script>
+    <script src="lib\backbone.marionette.js"></script>
+    <link rel="stylesheet" type="text/css" href="content/site.css" />
+    <script type="text/html" id="headerTemplate">
+        <h1>Contact Manager</h1>
+        <hr/>
+    </script>
+    
+    <script type="text/html" id="footerTemplate">
+        <h6>&copy; 2013 Srihari Sridharan</h6>
+    </script>
+    
+    <script type="text/html" id="mainTemplate">
+        <div class="row">
+            <label>First Name:</label>
+            <span><%= firstName %></span>
+        </div>
+        <div class="row">
+            <label>Last Name:</label>
+            <span><%= lastName %></span>
+        </div>
+        <div class="row">
+            <label>Email:</label>
+            <span><%= email %></span>
+        </div>
+        <hr/>
+    </script>
+    <script type="text/html" id="contactsList">
+        <h2>Contacts</h2>
+        <div></div>
+    </script>
+    <script>
+        /*
+         * Application object, initializers and intialize events.
+         */
+
+        //Create an application object
+        var application = new Marionette.Application();
+
+        //Initializers
+        var SampleModule1 = function(options){
+            console.log('Sample Module 1 Initialized! = ' + options.initialize);
+        };
+
+        var SampleModule2 = function(options){
+            console.log('Sample Module 2 Initialized! = ' + options.initialize);
+        };
+
+        //Add a module initializer
+        //IMPORTANT: Initializers are fired in the order in
+        //which they are added to the application object.
+
+        application.addInitializer(function(options){
+            application.sampleModule2 = new SampleModule2(options);
+        });
+
+        application.addInitializer(function(options){
+            application.sampleModule1 = new SampleModule1(options);
+        });
+
+        application.on('initialize:before',function(options){            
+            options.initialize = true;
+            console.log('Application initialize:before fired!');
+        });
+
+        application.on('initialize:after',function(options){
+            console.log('Application initialize:after fired!');
+        });
+
+        application.on('start',function(options){
+            Backbone.history.start();
+            console.log('Application start fired!');
+        });
+
+        var options = {};
+        //Calling start() triggers all the initializers.
+        application.start(options);
+
+        /*
+         * Event Aggregator
+         */
+
+        /* Modules in an application should be completely ignorant of
+         * one another. The only way they should communicate is through
+         * application wide events.        
+         * Marionette makes this kind of decoupling largely possible via
+         * the event aggregator that is automatically attached to the
+         * application object.
+         */
+
+         application.vent.on('custom:event1', function(){
+            console.log('Custom Event 1 triggered!');
+            application.vent.trigger('custom:event2');
+         });
+
+         application.vent.on('custom:event2', function(){
+            console.log('Custom Event 2 triggered!');
+         })
+
+         application.vent.trigger('custom:event1');
+
+         /*
+          * Region - usually created with new Marionette.Region({ el: 'selector'})
+          */
+
+        //Adding a region by supplying a selector
+        application.addRegions({
+            headerRegion: '#header'
+        });
+
+        //Custom Region Type
+        var MainRegion = Marionette.Region.extend({
+            el: '#main'
+        });
+
+        application.mainRegion = new MainRegion();
+
+        //Custom Region Type With Selector
+        var FooterRegion = Backbone.Marionette.Region.extend({});
+        application.addRegions({
+            footerRegion:{
+                regionType: FooterRegion,
+                selector: "#footer"
+            }
+        });
+
+        //Define the view
+        var ContactView = Marionette.ItemView.extend({
+            template: '#mainTemplate',
+        });
+
+        var ContactsView = Marionette.CompositeView.extend({
+            template: '#contactsList',
+            itemViewContainer:'div',
+            itemView: ContactView
+        }); 
+
+        var HeaderView = Marionette.ItemView.extend({
+            template: "#headerTemplate"
+        });
+
+        var FooterView = Marionette.ItemView.extend({
+            template: "#footerTemplate"
+        });
+
+        //Define the model
+        var Contact = Backbone.Model.extend({
+            defaults: {
+                firstName: "first name",
+                lastName: "last name",
+                email: "first.last@abc.com"
+            }
+        });
+
+        var Contacts = Backbone.Collection.extend({
+            model: Contact
+        });
+
+        //Create contact instances.
+        var contact1 = new Contact({
+            firstName: "John",
+            lastName: "Miller",
+            email: "John.Miller@gmail.com"
+        });
+
+        var contact2 = new Contact({
+            firstName: "Ken",
+            lastName: "Robert",
+            email: "Ken.Robert@gmail.com"
+        });
+
+        var contact3 = new Contact({
+            firstName: "Keith",
+            lastName: "Mathews",
+            email: "Keith.Mathews@gmail.com"
+        });
+
+        //Construct the collection
+        var contacts = new Contacts();
+        contacts.add(contact1);
+        contacts.add(contact2);
+        contacts.add(contact3);
+
+        //Instantiate the ContactsView
+        var contactsView = new ContactsView({
+            collection: contacts
+        });
+    
+        //This is how you instantiate a view with model.
+        // var contactView = new ContactView({
+        //     model: contact
+        // });
+
+        //Instantiate the views.
+        var headerView = new HeaderView();
+        var footerView = new FooterView();
+
+        //Show the views in regions.
+        application.headerRegion.show(headerView);
+        application.mainRegion.show(contactsView);
+        application.footerRegion.show(footerView);
+    </script>
+</body>
+</html>
