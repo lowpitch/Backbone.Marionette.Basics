@@ -1,6 +1,10 @@
 <!DOCTYPE HTML>
 <html>
 <head>
+    <!--
+    Author: Srihari Sridharan
+    Date: 20131003
+    -->
     <meta charset="UTF-8">
     <title>Marionette</title>
 </head>
@@ -43,10 +47,9 @@
         <div></div>
     </script>
     <script>
-        /*
+        /*------------------------------------------------------------------
          * Application object, initializers and intialize events.
-         */
-
+         *------------------------------------------------------------------*/
         //Create an application object
         var application = new Marionette.Application();
 
@@ -89,9 +92,9 @@
         //Calling start() triggers all the initializers.
         application.start(options);
 
-        /*
+        /*------------------------------------------------------------------
          * Event Aggregator
-         */
+         *------------------------------------------------------------------*/
 
         /* Modules in an application should be completely ignorant of
          * one another. The only way they should communicate is through
@@ -112,9 +115,10 @@
 
          application.vent.trigger('custom:event1');
 
-         /*
-          * Region - usually created with new Marionette.Region({ el: 'selector'})
-          */
+         
+        /*------------------------------------------------------------------
+         * Region - usually created with new Marionette.Region({ el: 'selector'})
+         *------------------------------------------------------------------*/
 
         //Adding a region by supplying a selector
         application.addRegions({
@@ -137,11 +141,12 @@
             }
         });
 
-        //Define the view
+        //Define the item view
         var ContactView = Marionette.ItemView.extend({
             template: '#mainTemplate',
         });
 
+        //Define the composite view
         var ContactsView = Marionette.CompositeView.extend({
             template: '#contactsList',
             itemViewContainer:'div',
@@ -212,6 +217,247 @@
         application.headerRegion.show(headerView);
         application.mainRegion.show(contactsView);
         application.footerRegion.show(footerView);
+
+        /*------------------------------------------------------------------
+         * Modules - Introduction
+         *------------------------------------------------------------------*/
+         //Simplest way to create a module.
+        var module1 = application.module('module1');
+
+        //Creating a module with public and private members and methods.
+        var taxModule = application.module('taxModule', 
+            function(taxModule,Backbone,Marionette,$,_){
+                console.log("Module created!");
+                //Private member
+                var privateMember = "This is a private member!";
+
+                //Public member
+                taxModule.publicMember = "This is a public member!";
+
+                //Private method
+                var privateMethod = function (option) {
+                    if(option) {
+                        console.log("This private method was called from a public method!");
+                        console.log("Accessing private member - " + privateMember);
+                    }
+                    else{
+                        console.log("Private method called!");
+                    }
+                };
+
+                //Public method.
+                taxModule.publicMethod = function () {
+                    console.log("Public method called!");
+                    privateMethod(true);
+                };
+        });
+        
+        //Access the public members
+        console.log(taxModule.publicMember);
+        taxModule.publicMethod();
+
+        //Syntax for custom arguments
+        /*application.module("clientModule", 
+            function (clientModule, App, Backbone, 
+                        Marionette, $, _, customArg1, customArg2) {
+        // Create your module here!
+        }, customArg1, customArg2);*/
+
+        /* 'this' keyword */
+        //'this' keyword is available within the function
+        // and actually refers to the module. Replace 'taxModule'
+        // in the code snippet above with 'this' and remove
+        // 'taxModule' from list of arguments.
+
+        /*Split Definitions*/
+        //Example: Assume this code is in a file
+        application.module("clientModule", function(){
+            this.someData = "This is public data.";
+        });
+
+        //Example: This code is in another file
+        application.module("clientModule", function(){
+            // Private Data And Functions
+            var privateData = "This is private data.";
+
+            var privateFunction = function(){
+                console.log(privateData);
+            }
+
+            this.someFunction = function(){
+                console.log("Split definition demo!");
+                privateFunction();
+                console.log(this.someData);
+            }
+        });
+
+        var clientModule = application.module("clientModule");
+        clientModule.someFunction();
+
+        /*------------------------------------------------------------------
+        * Accessing Modules
+        *------------------------------------------------------------------*/
+        //2 ways to access a module
+        //Already we created the clientModule
+
+        //More preferred as it clearly conveys the intent and the result.
+        //Advantage: Clearly conveys intent.
+        //NOTE: Marionette does not report error when you spell the module
+        //incorrectly. Unless and until you access a member you will not know this.
+        var clientModuleRef1 = application.module("clientModule");
+
+        //Less preferred as it is not as clear as above.
+        //Also, the module should be created before it is accessed like this.
+        var clientModuleRef2 = application.clientModule;
+        console.log("Comparing client module instances : " 
+            + (clientModuleRef1 === clientModuleRef2));
+
+        /*------------------------------------------------------------------
+        * Submodules
+        *------------------------------------------------------------------*/
+
+        //Module object does not have its own module()
+        //method to create a sub module.
+
+        //Instead use the 'parentModule.subModule' notation for the module name.
+        //Now, this single statement below creates both parent and sub module in one go!
+        var subModule = application.module("parentModule.subModule");
+        var parentModule = application.parentModule;
+        console.log("Parent module name: " + parentModule.moduleName);
+        console.log("Sub module name: " + subModule.moduleName);
+
+        //NOTE:
+
+        //The app object is accessible inside the module!
+        var app = parentModule.app;
+        console.log("Accessing and evaluating 'app' object inside module: " 
+            + (app === application));
+
+        //Accessing sub modules. All the below examples work. The first is preferred.
+        var child1 = application.module("parent.child");
+        var child2 = application.module("parent").child;
+        var child3 = application.parent.child;
+        console.log("Comparing child instances!");
+        console.log((child1 === child2));
+        console.log((child3 === child2));
+        console.log((child1 === child3));
+
+        /*------------------------------------------------------------------
+        * Starting And Stopping Modules
+        *------------------------------------------------------------------*/
+
+        /*
+         Application Start Sequence
+         ----------- ----- --------
+         * fires the initialize:before event
+         * starts all of the defined modules
+         * runs all of the initializers in the order they were added
+         * fires the initialize:after event
+         * fires the start event
+         Similarly application could be stopped by calling stop().
+         */
+
+        /*
+         Module Start Sequence
+         ------ ----- --------
+         * fires the before:start event
+         * starts all of its defined submodules
+         * runs all of its initializers in the order they were added
+         * fires the start event
+         */
+
+         /*
+         Module Stop Sequence
+         ------ ---- --------
+         * fires the before:stop event
+         * stops its submodules
+         * runs its finalizers in the order they were added
+         * fires the stop event
+         */
+
+        /*------------------------------------------------------------------
+        * Module Initializers and Finalizers
+        *------------------------------------------------------------------*/
+
+         var complexModule = application.module("complexModule", function () {
+            //When startWithParent is set to false, the module is not started
+            //when its parent module (or application start for root level modules)
+            //gets started. Instead we need to call the start manually.
+            this.startWithParent = false;
+
+            var User = function(){
+                this.firstName = "Ken";
+                this.lastName = "Thomas";                
+                var getFirstName = function(){
+                    return firstName;
+                };
+                var getLastName = function(){
+                    return lastName;
+                };
+            };
+
+            User.prototype.getFullName = function () {
+                return this.firstName + ' ' + this.lastName;
+            };
+
+            var that = this; //Create a closure.
+            this.addInitializer(function (){
+                console.log("Called complex module initializer!");
+                that.user = new User();
+            });
+
+            this.addFinalizer(function(){
+                console.log("Called complex module finalizer!");
+                that.user = null;
+            });
+         });
+        
+        //NOTE: The start() call is needed as 'startWithParent' is set to 'false'
+        complexModule.start();
+        console.log(complexModule.user.getFullName());
+        complexModule.stop();
+
+        /*------------------------------------------------------------------
+        * Automatic And Manual Starting
+        *------------------------------------------------------------------*/
+        
+        /*
+
+        TECHNIQUE #1
+
+        // Set 'startWithParent' inside function to false.
+        App.module("myModule", function(){
+            // Assign 'startWithParent' to false
+            this.startWithParent = false;
+        });
+
+        TECHNIQUE #2
+
+        // Pass in an object
+        App.module("myModule", {
+            startWithParent: false,
+            define: function(){
+                // Define the module here
+            }
+        });
+
+        App.start();
+
+        // myModule wasn't started, so we need to do it manually
+        var data = "Data that will be passed along here to all sub modules!";
+        App.module('myModule').start(data);
+        */
+
+        /*------------------------------------------------------------------
+        * Modules and Events
+        *------------------------------------------------------------------*/
+        var eventSampleModule = application.module("eventSampleModule", function (){
+            this.on("sample:event",function (){
+                console.log("Sample event handled by 'eventSampleModule'.");
+            });
+        });
+
+        eventSampleModule.trigger("sample:event");
     </script>
 </body>
 </html>
