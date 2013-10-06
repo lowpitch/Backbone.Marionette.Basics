@@ -213,10 +213,26 @@
         var headerView = new HeaderView();
         var footerView = new FooterView();
 
+        //Getting a region using the getRegion() method.
+        var headerRegion = application.getRegion("headerRegion");
+
         //Show the views in regions.
-        application.headerRegion.show(headerView);
+        headerRegion.show(headerView);
+
+        //Regions can also be accessed as shown below.
         application.mainRegion.show(contactsView);
         application.footerRegion.show(footerView);
+
+        /*
+        Removing a region
+        Regions can also be removed with the removeRegion method, passing 
+        in the name of the region to remove as a string value:
+
+        application.removeRegion('footerRegion');
+        
+        Removing a region will properly close it before removing it from
+        the application object.
+        */
 
         /*------------------------------------------------------------------
          * Modules - Introduction
@@ -400,6 +416,10 @@
                 return this.firstName + ' ' + this.lastName;
             };
 
+            this.on('before:start',function (){
+                console.log("Inside complexModule before:start event handler.");
+            });
+
             var that = this; //Create a closure.
             this.addInitializer(function (){
                 console.log("Called complex module initializer!");
@@ -409,6 +429,10 @@
             this.addFinalizer(function(){
                 console.log("Called complex module finalizer!");
                 that.user = null;
+            });
+
+            this.on('start', function (){
+                console.log('Inside complexModule start event handler.');
             });
          });
         
