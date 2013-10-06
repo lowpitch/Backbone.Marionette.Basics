@@ -434,6 +434,14 @@
             this.on('start', function (){
                 console.log('Inside complexModule start event handler.');
             });
+
+            this.on('before:stop', function (){
+                console.log('Inside complexModule before:stop event handler.');
+            });
+
+            this.on('stop', function (){
+                console.log('Inside complexModule stop event handler.');
+            });
          });
         
         //NOTE: The start() call is needed as 'startWithParent' is set to 'false'
