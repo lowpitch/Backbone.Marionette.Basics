@@ -146,8 +146,8 @@
             template: '#mainTemplate',
         });
 
-        //Define the composite view
-        var ContactsView = Marionette.CompositeView.extend({
+        //Define the collection view
+        var ContactsView = Marionette.CollectionView.extend({
             template: '#contactsList',
             itemViewContainer:'div',
             itemView: ContactView
@@ -370,7 +370,6 @@
          * runs all of the initializers in the order they were added
          * fires the initialize:after event
          * fires the start event
-         Similarly application could be stopped by calling stop().
          */
 
         /*
